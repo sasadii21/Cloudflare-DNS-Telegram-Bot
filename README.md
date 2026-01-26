@@ -15,4 +15,4 @@ A lightweight Telegram bot to manage Cloudflare DNS records (A Records) quickly 
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/sasadii21/Cloudflare-DNS-Telegram-Bot.git
-   cd YOUR_REPO_NAME
+   cd Cloudflare-DNS-Telegram-Bot
