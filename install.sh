@@ -1,77 +1,36 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Cloudflare Bot Installer
-# Installs dependencies, sets up environment variables, and creates a systemd service.
-
-SERVICE_NAME="cfbot"
-INSTALL_DIR=$(pwd)
-PYTHON_EXEC="/usr/bin/python3"
-
-echo "--------------------------------------------------"
-echo "   Cloudflare DNS Telegram Bot - Installer"
-echo "--------------------------------------------------"
-
-# 1. Check Root
-if [ "$EUID" -ne 0 ]; then 
-  echo "Please run as root (sudo bash install.sh)"
-  exit
-fi
-
-# 2. Install System Dependencies
-echo "[+] Installing system dependencies..."
-apt-get update -y
-apt-get install python3-pip python3-venv -y
-
-# 3. Install Python Dependencies
-echo "[+] Installing Python libraries..."
-pip3 install -r requirements.txt
-
-# 4. Configure Environment Variables
-echo "--------------------------------------------------"
-echo "Please enter your configuration details:"
-echo "--------------------------------------------------"
+echo "=== Cloudflare DNS Telegram Bot Installer ==="
 
 read -p "Enter Telegram Bot Token: " TG_TOKEN
-read -p "Enter Cloudflare API Token (Edit Zone DNS permission): " CF_TOKEN
-read -p "Enter your Telegram Admin Numeric ID: " ADMIN_ID
+read -p "Enter Cloudflare API Token: " CF_TOKEN
+read -p "Enter Telegram Admin Numeric ID(s) (comma-separated): " ADMIN_IDS
 
-# Create .env file
+# Create .env
 cat <<EOF > .env
 TELEGRAM_BOT_TOKEN=$TG_TOKEN
 CLOUDFLARE_API_TOKEN=$CF_TOKEN
-ADMIN_ID=$ADMIN_ID
+ADMIN_IDS=$ADMIN_IDS
 EOF
 
-echo "[+] Configuration saved to .env"
+echo "[+] .env created."
 
-# 5. Create Systemd Service
-echo "[+] Creating Systemd Service..."
+# Install deps
+if command -v apt >/dev/null 2>&1; then
+  sudo apt update
+  sudo apt install -y python3 python3-pip python3-venv
+fi
 
-cat <<EOF > /etc/systemd/system/$SERVICE_NAME.service
-[Unit]
-Description=Cloudflare DNS Telegram Bot
-After=network.target
+# venv
+python3 -m venv venv
+# shellcheck disable=SC1091
+source venv/bin/activate
 
-[Service]
-User=root
-WorkingDirectory=$INSTALL_DIR
-ExecStart=$PYTHON_EXEC $INSTALL_DIR/bot.py
-Restart=always
-RestartSec=5
-EnvironmentFile=$INSTALL_DIR/.env
+pip install --upgrade pip
+pip install -r requirements.txt
 
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# 6. Enable and Start Service
-echo "[+] Starting Service..."
-systemctl daemon-reload
-systemctl enable $SERVICE_NAME
-systemctl start $SERVICE_NAME
-
-echo "--------------------------------------------------"
-echo "✅ Installation Complete!"
-echo "Bot status: systemctl status $SERVICE_NAME"
-echo "Stop bot: systemctl stop $SERVICE_NAME"
-echo "--------------------------------------------------"
+echo "[+] Installed successfully."
+echo "Run:"
+echo "  source venv/bin/activate"
+echo "  python3 bot.py"
